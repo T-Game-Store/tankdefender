@@ -37,10 +37,16 @@ class Player {
         if (keys['g'] && skillCooldown <= 0 && currentLevel >= 3) {
             this.usePiercingShot(); skillCooldown = SKILL_MAX_COOLDOWN; keys['g'] = false;
         }
-        if (keys['f'] || isFiring) {
+       if (keys['f'] || isFiring) {
             this.shootTimer++;
             if (this.shootTimer >= 12) {
                 bullets.push(new Bullet(this.x, this.y, Math.sin(this.angle) * 12, -Math.cos(this.angle) * 12));
+                
+                let sfx = new Audio(SHOOT_SOUND_URL);
+                sfx.volume = 0.3; 
+                sfx.playbackRate = 2.5;
+                sfx.play();
+
                 this.shootTimer = 0;
             }
         } else { this.shootTimer = 12; }
@@ -48,5 +54,10 @@ class Player {
     usePiercingShot() {
         let b = new Bullet(this.x, this.y, Math.sin(this.angle) * 15, -Math.cos(this.angle) * 15);
         b.isPiercing = true; b.size = 10; bullets.push(b);
+
+        let skillSfx = new Audio('skillshoot1.mp3');
+        skillSfx.volume = 0.9;
+        skillSfx.playbackRate = 1.0;
+        skillSfx.play();
     }
 }
