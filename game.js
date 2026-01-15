@@ -113,7 +113,7 @@ class Enemy {
             this.hp = 5; this.maxHp = 5; this.speed = 1.0; this.width = baseSize * 1.3; this.height = baseSize * 1.3;
             this.img = new Image(); this.img.src = IMG_ENEMY_TANK; this.damage = 2;
         } else if (type === 'dash') {
-            this.hp = 3; this.maxHp = 3; this.speed = 1.8; this.width = baseSize; this.height = baseSize;
+            this.hp = 3; this.maxHp = 3; this.speed = 1.7; this.width = baseSize; this.height = baseSize;
             this.img = new Image(); this.img.src = IMG_ENEMY_DASH; this.damage = 1;
         } else if (type === 'bomb') {
             this.hp = 2; this.maxHp = 2; this.speed = 1.0; this.width = baseSize; this.height = baseSize;
@@ -170,7 +170,7 @@ class Boss {
         this.x += this.speed * this.direction;
         if (this.x <= 50 || this.x >= canvas.width - this.width - 50) this.direction *= -1;
         this.shootTimer++;
-        if (this.shootTimer >= 80) {
+        if (this.shootTimer >= 105) { // 1.75 giây (60fps * 1.75 = 105)
             let bX = this.x + this.width / 2; let bY = this.y + this.height - 20;
             for(let i = -1; i <= 1; i++) enemies.push(new BossBullet(bX, bY, i * 1.5, 4));
             this.shootTimer = 0;
@@ -259,7 +259,7 @@ function animate() {
         if (b.y < -50 || b.y > canvas.height + 50 || b.x < -50 || b.x > canvas.width + 50) bullets.splice(i, 1);
     });
 
-    // --- LOGIC SPAWN BOSS LEVEL 4 (SAU 5 GIÂY) ---
+    // --- LOGIC SPAWN BOSS LEVEL 4 ---
     spawnTimer++;
     if (currentLevel === 4 && !bossSpawned && spawnTimer > 300) {
         boss = new Boss(); bossSpawned = true;
@@ -270,10 +270,14 @@ function animate() {
         boss.update(); boss.draw();
         bullets.forEach((b, j) => {
             if (b.x > boss.x && b.x < boss.x + boss.width && b.y > boss.y && b.y < boss.y + boss.height) {
-                boss.hp -= (b.isPiercing ? 2 : 1); bullets.splice(j, 1);
+                // Sát thương từ đạn thường là 1, đạn Skill xuyên thấu là 2
+                let damage = b.isPiercing ? 2 : 1;
+                boss.hp -= damage; bullets.splice(j, 1);
+                
                 let hpP = (boss.hp / boss.maxHp) * 100;
                 document.getElementById('bossHPBar').style.width = hpP + "%";
                 document.getElementById('bossHPText').innerText = boss.hp + "/" + boss.maxHp;
+                
                 if (boss.hp <= 0) {
                     explosions.push(new Explosion(boss.x + boss.width/2, boss.y + boss.height/2, boss.width));
                     boss = null; enemiesLeft = 0; updateHUD(); gameOver(true);
@@ -282,8 +286,8 @@ function animate() {
         });
     }
 
-    // Spawn quái thường (Dùng % để không làm reset spawnTimer của Boss)
-    const maxSpawn = currentLevel * 10 + 10;
+    // Spawn quái thường
+    const maxSpawn = currentLevel === 4 ? 35 : (currentLevel * 10 + 10);
     if (enemiesSpawned < maxSpawn && spawnTimer % 100 === 0) {
         let type = 'normal'; let r = Math.random();
         if (currentLevel >= 2 && r < 0.25) type = 'tank';
@@ -303,7 +307,13 @@ function animate() {
         bullets.forEach((b, j) => {
             if (b.x > en.x && b.x < en.x + en.width && b.y > en.y && b.y < en.y + en.height) {
                 if (b.isPiercing && b.hitEnemies.includes(en)) return;
-                en.hp--; if (b.isPiercing) b.hitEnemies.push(en); else bullets.splice(j, 1);
+                
+                // Sát thương từ đạn thường là 1, đạn Skill xuyên thấu là 2
+                let damage = b.isPiercing ? 2 : 1;
+                en.hp -= damage; 
+
+                if (b.isPiercing) b.hitEnemies.push(en); else bullets.splice(j, 1);
+                
                 if (en.hp <= 0) {
                     explosions.push(new Explosion(en.x + en.width/2, en.y + en.height/2, en.width, en.type === 'bomb'));
                     enemies.splice(i, 1); enemiesLeft--; updateHUD();
@@ -323,10 +333,14 @@ function initGame(level) {
     player = new Player(); bullets = []; enemies = []; explosions = [];
     boss = null; bossSpawned = false;
     lives = level === 4 ? 10 : 5; 
-    enemiesLeft = level * 10 + 10;
+    enemiesLeft = level === 4 ? 35 : (level * 10 + 10);
     enemiesSpawned = 0; spawnTimer = 0; skillCooldown = 0;
     gameActive = true;
+    
     document.getElementById('bossHUD').classList.add('hidden');
+    document.getElementById('bossHPBar').style.width = "100%";
+    document.getElementById('bossHPText').innerText = "30/30";
+
     [joystickZone, fireButtonZone].forEach(z => z.classList.remove('hidden'));
     if (level >= 3) skillButtonZone.classList.remove('hidden'); else skillButtonZone.classList.add('hidden');
     updateHUD(); animate();
