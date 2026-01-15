@@ -1,17 +1,24 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// --- 1. Khai báo hình ảnh (Dùng chung cho các file con) ---
 const IMG_PLAYER = 'tank.png', IMG_ENEMY = 'quai.png', IMG_ENEMY_TANK = 'quai_trau.png',
       IMG_ENEMY_DASH = 'quai_nhanh.png', IMG_ENEMY_BOMB = 'quai_bom.png',
       IMG_EXPLOSION = 'explosion.png', IMG_BOSS = 'king_kong.png', IMG_BOSS_BULLET = 'king_kong_bullet.png';
 
-// --- 2. Biến trạng thái Game ---
+const BGM_URL = 'bkgmusic.mp3'; 
+let bgm = new Audio(BGM_URL);
+bgm.loop = true; 
+bgm.volume = 0.5;
+const BUTTON_CLICK_URL = 'click.mp3';
+const btnClickSound = new Audio(BUTTON_CLICK_URL);
+btnClickSound.volume = 0.6; 
+
+const SHOOT_SOUND_URL = 'shoot.mp3';
+
 let player, bullets, enemies, explosions, boss, bossSpawned;
 let keys = {}, gameActive = false, lives = 5, enemiesLeft = 20, enemiesSpawned = 0, spawnTimer = 0, currentLevel = 1;
 let skillCooldown = 0; const SKILL_MAX_COOLDOWN = 600;
 
-// --- 3. Elements giao diện ---
 const stick = document.getElementById('joystickStick'), base = document.getElementById('joystickBase'),
       fireBtn = document.getElementById('fireButton'), skillBtn = document.getElementById('skillButton'),
       joystickZone = document.getElementById('joystickZone'), fireButtonZone = document.getElementById('fireButtonZone'),
@@ -19,14 +26,23 @@ const stick = document.getElementById('joystickStick'), base = document.getEleme
 
 let isDragging = false, isFiring = false, joystickData = { x: 0, y: 0 };
 
-// --- 4. Hệ thống Responsive ---
+function playClickSound() {
+    btnClickSound.currentTime = 0; 
+    btnClickSound.playbackRate = 2.0;
+    btnClickSound.play();
+}
+
+document.querySelectorAll('button').forEach(btn => {
+    if (btn.id !== 'fireButton' && btn.id !== 'skillButton') {
+        btn.addEventListener('click', playClickSound);
+    }
+});
 function resize() {
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     if (player) { player.x = canvas.width / 2; player.y = canvas.height - 150; }
 }
 window.addEventListener('resize', resize); resize();
 
-// --- 5. Hệ thống Điều khiển (Controls) ---
 function handleJoystick(e) {
     if (!isDragging) return;
     const rect = base.getBoundingClientRect();
@@ -53,14 +69,12 @@ window.addEventListener('mouseup', () => isFiring = false);
 window.addEventListener('touchend', () => isFiring = false);
 skillBtn.addEventListener('pointerdown', (e) => { if (skillCooldown <= 0 && currentLevel >= 3) { keys['g'] = true; } e.preventDefault(); });
 
-// --- 6. Vòng lặp Game (Main Loop) ---
 function animate() {
     if (!gameActive) return;
     requestAnimationFrame(animate);
     ctx.fillStyle = 'black'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
 
-    // Xử lý UI Skill
     if (skillCooldown > 0) {
         skillCooldown--;
         document.getElementById('skillCooldownOverlay').style.height = (skillCooldown / SKILL_MAX_COOLDOWN) * 100 + "%";
@@ -77,7 +91,6 @@ function animate() {
     spawnTimer++;
     const config = LEVEL_CONFIG[currentLevel];
 
-    // Logic Boss Level 4
     if (config.hasBoss && !bossSpawned && spawnTimer > 300) {
         boss = new Boss(); bossSpawned = true;
         document.getElementById('bossHUD').classList.remove('hidden');
@@ -99,7 +112,6 @@ function animate() {
         });
     }
 
-    // Spawn quái
     if (enemiesSpawned < config.enemiesTarget && spawnTimer % config.spawnRate === 0) {
         enemies.push(new Enemy(getSpawnType(currentLevel)));
         enemiesSpawned++; 
@@ -107,14 +119,12 @@ function animate() {
 
     enemies.forEach((en, i) => {
         en.update(); en.draw();
-        // Va chạm Player
         let dP = Math.sqrt((en.x + en.width/2 - player.x)**2 + (en.y + en.height/2 - player.y)**2);
         if (dP < player.radius + en.width/2.5) {
             explosions.push(new Explosion(en.x + en.width/2, en.y + en.height/2, en.width, en.type === 'bomb'));
             lives -= (en.damage || 1); enemies.splice(i, 1); enemiesLeft--; updateHUD();
             if (lives <= 0) gameOver(false); return;
         }
-        // Va chạm Đạn
         bullets.forEach((b, j) => {
             if (b.x > en.x && b.x < en.x + en.width && b.y > en.y && b.y < en.y + en.height) {
                 if (b.isPiercing && b.hitEnemies.includes(en)) return;
@@ -128,7 +138,6 @@ function animate() {
                 }
             }
         });
-        // Chạm thành
         if (en && en.y > canvas.height - 75 && en.type !== 'bullet') {
             enemies.splice(i, 1); lives--; enemiesLeft--; updateHUD();
             if (lives <= 0) gameOver(false); else if (enemiesLeft <= 0 && !boss) gameOver(true);
@@ -136,7 +145,6 @@ function animate() {
     });
 }
 
-// --- 7. Hàm hỗ trợ (Helper Functions) ---
 function initGame(level) {
     currentLevel = level; resize();
     const config = LEVEL_CONFIG[level];
@@ -166,6 +174,7 @@ function updateHUD() {
 }
 
 function gameOver(isWin) {
+    stopMusic();
     gameActive = false; document.getElementById('endScreen').style.display = 'flex';
     [joystickZone, fireButtonZone, skillButtonZone].forEach(z => z.classList.add('hidden'));
     const status = document.getElementById('endStatus'), nextBtn = document.getElementById('nextLevelBtn');
@@ -174,17 +183,31 @@ function gameOver(isWin) {
 }
 
 function showMenu() { 
+    stopMusic();
     document.getElementById('mainMenu').style.display = 'flex'; 
     ['levelSelect', 'endScreen', 'gameHUD'].forEach(id => document.getElementById(id).style.display = 'none');
     [joystickZone, fireButtonZone, skillButtonZone].forEach(z => z.classList.add('hidden'));
     gameActive = false; 
 }
+
+function playMusic(level) {
+    bgm.pause();
+    if (level === 4) {
+        bgm.src = 'kingkong.mp3';
+    } else {
+        bgm.src = BGM_URL;
+    }
+    bgm.play();
+}
+function stopMusic() {
+    bgm.pause();
+    bgm.currentTime = 0; 
+}
 function showLevelSelect() { document.getElementById('mainMenu').style.display = 'none'; document.getElementById('levelSelect').style.display = 'flex'; }
-function startGame(level) { document.getElementById('levelSelect').style.display = 'none'; document.getElementById('gameHUD').style.display = 'block'; initGame(level); }
+function startGame(level) { document.getElementById('levelSelect').style.display = 'none'; document.getElementById('gameHUD').style.display = 'block';playMusic(level); initGame(level); }
 function restartLevel() { document.getElementById('endScreen').style.display = 'none'; initGame(currentLevel); }
 function nextLevel() { document.getElementById('endScreen').style.display = 'none'; currentLevel++; initGame(currentLevel); }
 
-// --- 8. Lắng nghe phím ---
 window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 window.addEventListener("keydown", function(e) { if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) e.preventDefault(); }, false);
