@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tank Defender</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Black+Ops+One&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="bg-[#050505] m-0 overflow-hidden flex items-center justify-center h-screen select-none font-['Orbitron']">
+
+    <div class="overlay"></div>
+
+    <div id="mainMenu" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/90 p-4">
+        <div class="mb-12 text-center">
+            <h1
+                class="text-5xl md:text-7xl font-bold text-red-700 tracking-[0.2em] uppercase title-glow font-['Black_Ops_One']">
+                TANK</h1>
+            <h1 class="text-3xl md:text-5xl font-bold text-white tracking-[0.3em] uppercase opacity-80">DEFENDER</h1>
+        </div>
+        <button onclick="showLevelSelect()" class="btn-primary w-full max-w-xs">INITIALIZE MISSION</button>
+    </div>
+
+    <div id="levelSelect" class="absolute inset-0 z-10 hidden flex flex-col items-center justify-center bg-black p-4">
+        <h2 class="text-xl md:text-2xl text-red-600 mb-10 tracking-[0.5em] font-bold">SECTOR SELECTION</h2>
+        <div class="flex gap-4 md:gap-6">
+            <button onclick="startGame(1)" class="level-btn active">01</button>
+            <button onclick="startGame(2)" class="level-btn active">02</button>
+            <button onclick="startGame(3)" class="level-btn active">03</button>
+            <button onclick="startGame(4)"
+                class="level-btn active border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]">04</button>
+        </div>
+        <button onclick="showMenu()"
+            class="mt-16 text-gray-500 hover:text-white transition-all text-xs tracking-widest uppercase">/ Return to
+            Command</button>
+    </div>
+
+    <div id="gameHUD" class="absolute inset-0 pointer-events-none hidden p-4 md:p-8">
+        <div class="absolute bottom-6 left-6 md:bottom-8 md:left-8 border-l-2 border-red-700 pl-4 bg-black/40 p-2">
+            <div class="text-[8px] md:text-[10px] text-red-500 tracking-tighter uppercase">Target Count</div>
+            <div class="text-xl md:text-3xl text-white font-bold font-mono">HOSTILES: <span id="enemyCount"
+                    class="text-red-600">20</span></div>
+        </div>
+        <div id="livesContainer" class="absolute top-6 right-6 md:top-8 md:right-8 flex gap-2 md:gap-3"></div>
+
+        <div class="absolute top-0 left-0 w-10 h-10 md:w-20 md:h-20 border-t-2 border-l-2 border-white/10"></div>
+        <div class="absolute bottom-0 right-0 w-10 h-10 md:w-20 md:h-20 border-b-2 border-r-2 border-white/10"></div>
+        <div id="bossHUD"
+            class="absolute top-10 left-1/2 -translate-x-1/2 w-[80%] max-w-2xl hidden pointer-events-none">
+            <div class="flex justify-between mb-1">
+                <span class="text-red-500 font-bold tracking-tighter text-sm md:text-base font-['Black_Ops_One']">BOSS:
+                    KING KONG</span>
+                <span id="bossHPText" class="text-white font-mono text-sm">30/30</span>
+            </div>
+            <div class="w-full h-4 bg-red-900/30 border border-red-500/50 backdrop-blur-sm overflow-hidden">
+                <div id="bossHPBar"
+                    class="h-full bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.8)] transition-all duration-300 w-full">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="endScreen"
+        class="absolute inset-0 z-20 hidden flex flex-col items-center justify-center bg-black/95 p-4 text-center">
+        <h2 id="endStatus"
+            class="text-4xl md:text-7xl font-bold mb-12 tracking-tighter uppercase font-['Black_Ops_One']">MISSION
+            FAILED</h2>
+        <div class="flex flex-col md:flex-row gap-4 md:gap-6 w-full max-w-xs md:max-w-none justify-center">
+            <button id="nextLevelBtn" onclick="nextLevel()"
+                class="btn-secondary text-green-400 border-green-400 hover:bg-green-400 hover:text-black hidden w-full md:w-auto">NEXT
+                MISSION</button>
+            <button onclick="restartLevel()"
+                class="btn-secondary text-white border-white hover:bg-white hover:text-black w-full md:w-auto">RE-ENGAGE</button>
+            <button onclick="showMenu()"
+                class="btn-secondary text-gray-500 border-gray-500 hover:border-red-600 hover:text-red-600 w-full md:w-auto">ABORT</button>
+        </div>
+    </div>
+
+    <div id="joystickZone"
+        class="absolute bottom-[110px] left-8 md:left-16 w-32 h-32 md:w-40 md:h-40 z-30 hidden pointer-events-auto">
+        <div id="joystickBase"
+            class="w-full h-full bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center relative">
+            <div id="joystickStick"
+                class="w-12 h-12 md:w-16 md:h-16 bg-white/20 border-2 border-white/30 rounded-full shadow-2xl transition-transform duration-75">
+            </div>
+        </div>
+    </div>
+    <div id="fireButtonZone" class="absolute bottom-[100px] right-10 w-24 h-24 z-30 hidden pointer-events-auto">
+        <div id="fireButton"
+            class="w-full h-full bg-red-600/20 border-4 border-red-600/40 rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-[0_0_20px_rgba(220,38,38,0.3)]">
+            <div class="text-red-500 font-bold text-xs tracking-tighter uppercase opacity-60">FIRE</div>
+        </div>
+    </div>
+    <div id="skillButtonZone" class="absolute bottom-[210px] right-10 w-20 h-20 z-30 hidden pointer-events-auto">
+        <div id="skillButton"
+            class="w-full h-full bg-blue-600/20 border-4 border-blue-600/40 rounded-full flex flex-col items-center justify-center active:scale-90 transition-transform overflow-hidden relative shadow-[0_0_20px_rgba(37,99,235,0.3)]">
+            <div id="skillCooldownOverlay"
+                class="absolute bottom-0 left-0 w-full bg-blue-600/60 h-0 transition-all duration-100"></div>
+            <div class="text-blue-400 font-bold text-[10px] z-10 uppercase tracking-tighter">SKILL</div>
+            <div id="skillTimerText" class="text-white text-xs font-bold z-10">G</div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script src="js/levels.js"></script>
+    <script src="js/explosion.js"></script>
+    <script src="js/bullet.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/enemy.js"></script>
+    <script src="js/boss.js"></script>
+    <script src="game.js"></script>
+</body>
+
+</html>
