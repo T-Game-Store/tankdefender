@@ -28,7 +28,7 @@ let isDragging = false, isFiring = false, joystickData = { x: 0, y: 0 };
 
 function playClickSound() {
     btnClickSound.currentTime = 0; 
-    btnClickSound.playbackRate = 2.0;
+    btnClickSound.playbackRate = 2.5;
     btnClickSound.play();
 }
 
@@ -203,10 +203,39 @@ function stopMusic() {
     bgm.pause();
     bgm.currentTime = 0; 
 }
+function openSkinMenu() {
+    const menu = document.getElementById('skinMenu');
+    const list = document.getElementById('skinList');
+    menu.classList.remove('hidden');
+    list.innerHTML = ''; 
+
+    Object.keys(SKINS_CONFIG).forEach(key => {
+        const skin = SKINS_CONFIG[key];
+        const isSelected = currentSkinKey === key;
+        
+        const card = document.createElement('div');
+        card.className = `p-4 border-2 transition-all cursor-pointer flex flex-col items-center ${isSelected ? 'border-blue-500 bg-blue-500/20' : 'border-white/10 bg-white/5'}`;
+        card.innerHTML = `
+            <img src="${skin.img}" class="w-20 h-20 mb-2 object-contain">
+            <div class="text-[10px] font-bold">${skin.name}</div>
+            <div class="text-[8px] opacity-50">${skin.description}</div>
+        `;
+        card.onclick = () => {
+            playClickSound();
+            currentSkinKey = key;
+            openSkinMenu();
+        };
+        list.appendChild(card);
+    });
+}
+
+function closeSkinMenu() {
+    document.getElementById('skinMenu').classList.add('hidden');
+}
 function showLevelSelect() { document.getElementById('mainMenu').style.display = 'none'; document.getElementById('levelSelect').style.display = 'flex'; }
 function startGame(level) { document.getElementById('levelSelect').style.display = 'none'; document.getElementById('gameHUD').style.display = 'block';playMusic(level); initGame(level); }
-function restartLevel() { document.getElementById('endScreen').style.display = 'none'; initGame(currentLevel); }
-function nextLevel() { document.getElementById('endScreen').style.display = 'none'; currentLevel++; initGame(currentLevel); }
+function restartLevel() { document.getElementById('endScreen').style.display = 'none';playMusic(currentLevel); initGame(currentLevel); }
+function nextLevel() { document.getElementById('endScreen').style.display = 'none'; currentLevel++;playMusic(currentLevel); initGame(currentLevel); }
 
 window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
