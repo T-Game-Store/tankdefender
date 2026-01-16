@@ -38,12 +38,6 @@ function playClickSound() {
     btnClickSound.play();
 }
 
-document.querySelectorAll('button').forEach(btn => {
-    if (btn.id !== 'fireButton' && btn.id !== 'skillButton') {
-        btn.addEventListener('click', playClickSound);
-    }
-});
-
 function resize() {
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     if (player) { player.x = canvas.width / 2; player.y = canvas.height - 150; }
@@ -202,6 +196,8 @@ function initGame(level) {
 
     document.getElementById('gameHUD').style.display = 'block';
     document.getElementById('pauseMenu').classList.add('hidden');
+    document.getElementById('pauseMenu').style.display = 'none';
+    
     joystickZone.classList.remove('hidden');
     fireButtonZone.classList.remove('hidden');
     if (level >= 3) skillButtonZone.classList.remove('hidden'); 
@@ -221,10 +217,12 @@ function initGame(level) {
 function updateHUD() {
     document.getElementById('enemyCount').innerText = Math.max(0, enemiesLeft);
     const container = document.getElementById('livesContainer');
-    container.innerHTML = '';
-    for (let i = 0; i < lives; i++) {
-        const heart = document.createElement('div'); heart.className = 'heart';
-        container.appendChild(heart);
+    if (container) {
+        container.innerHTML = '';
+        for (let i = 0; i < lives; i++) {
+            const heart = document.createElement('div'); heart.className = 'heart';
+            container.appendChild(heart);
+        }
     }
 }
 
@@ -252,9 +250,12 @@ function gameOver(isWin) {
 function showMenu() { 
     stopMusic();
     document.getElementById('mainMenu').style.display = 'flex'; 
-    ['levelSelect', 'endScreen', 'gameHUD', 'pauseMenu'].forEach(id => {
+    ['levelSelect', 'endScreen', 'gameHUD', 'pauseMenu', 'skinMenu'].forEach(id => {
         let el = document.getElementById(id);
-        if(el) el.style.display = 'none';
+        if(el) {
+            el.style.display = 'none';
+            el.classList.add('hidden');
+        }
     });
     joystickZone.classList.add('hidden');
     fireButtonZone.classList.add('hidden');
@@ -270,12 +271,46 @@ function playMusic(level) {
     } else {
         bgm.src = BGM_URL;
     }
-    bgm.play();
+    bgm.play().catch(e => console.log("Music play blocked"));
 }
 
 function stopMusic() {
     bgm.pause();
     bgm.currentTime = 0; 
+}
+
+function openSkinMenu() {
+    const menu = document.getElementById('skinMenu');
+    const list = document.getElementById('skinList');
+    menu.style.display = 'flex';
+    menu.classList.remove('hidden');
+    list.innerHTML = ''; 
+
+    Object.keys(SKINS_CONFIG).forEach(key => {
+        const skin = SKINS_CONFIG[key];
+        const isSelected = currentSkinKey === key;
+        
+        const card = document.createElement('div');
+        card.className = `p-4 border-2 transition-all cursor-pointer flex flex-col items-center ${isSelected ? 'border-blue-500 bg-blue-500/20' : 'border-white/10 bg-white/5'}`;
+        card.innerHTML = `
+            <img src="${skin.img}" class="w-20 h-20 mb-2 object-contain">
+            <div class="text-[10px] font-bold text-white">${skin.name}</div>
+            <div class="text-[8px] opacity-50 text-white">${skin.description}</div>
+        `;
+        card.onclick = (e) => {
+            e.stopPropagation();
+            playClickSound();
+            currentSkinKey = key;
+            openSkinMenu();
+        };
+        list.appendChild(card);
+    });
+}
+
+function closeSkinMenu() {
+    const menu = document.getElementById('skinMenu');
+    menu.style.display = 'none';
+    menu.classList.add('hidden');
 }
 
 function pauseGame() {
@@ -304,15 +339,38 @@ function resumeGame() {
     fireButtonZone.classList.remove('hidden');
     if (currentLevel >= 3) skillButtonZone.classList.remove('hidden');
 
-    bgm.play();
+    bgm.play().catch(e => {});
     playClickSound();
     requestAnimationFrame(animate); 
 }
 
-function showLevelSelect() { document.getElementById('mainMenu').style.display = 'none'; document.getElementById('levelSelect').style.display = 'flex'; }
-function startGame(level) { document.getElementById('levelSelect').style.display = 'none'; document.getElementById('gameHUD').style.display = 'block'; playMusic(level); initGame(level); }
-function restartLevel() { document.getElementById('endScreen').style.display = 'none'; document.getElementById('pauseMenu').classList.add('hidden'); document.getElementById('pauseMenu').style.display = 'none'; playMusic(currentLevel); initGame(currentLevel); }
-function nextLevel() { document.getElementById('endScreen').style.display = 'none'; currentLevel++; playMusic(currentLevel); initGame(currentLevel); }
+function showLevelSelect() { 
+    document.getElementById('mainMenu').style.display = 'none'; 
+    document.getElementById('levelSelect').style.display = 'flex'; 
+}
+
+function startGame(level) { 
+    document.getElementById('levelSelect').style.display = 'none'; 
+    document.getElementById('gameHUD').style.display = 'block'; 
+    playMusic(level); 
+    initGame(level); 
+}
+
+function restartLevel() { 
+    document.getElementById('endScreen').style.display = 'none'; 
+    const pMenu = document.getElementById('pauseMenu');
+    pMenu.classList.add('hidden'); 
+    pMenu.style.display = 'none'; 
+    playMusic(currentLevel); 
+    initGame(currentLevel); 
+}
+
+function nextLevel() { 
+    document.getElementById('endScreen').style.display = 'none'; 
+    currentLevel++; 
+    playMusic(currentLevel); 
+    initGame(currentLevel); 
+}
 
 window.addEventListener('keydown', e => {
     if (e.key === "Escape") {
@@ -323,7 +381,17 @@ window.addEventListener('keydown', e => {
     }
     keys[e.key.toLowerCase()] = true;
 });
+
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
 window.addEventListener("keydown", function(e) { 
     if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) e.preventDefault(); 
 }, false);
+
+document.addEventListener('click', function(e) {
+    if (e.target.tagName === 'BUTTON') {
+        if (e.target.id !== 'fireButton' && e.target.id !== 'skillButton') {
+            playClickSound();
+        }
+    }
+});
