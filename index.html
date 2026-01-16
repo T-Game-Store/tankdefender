@@ -22,7 +22,23 @@
                 TANK</h1>
             <h1 class="text-3xl md:text-5xl font-bold text-white tracking-[0.3em] uppercase opacity-80">DEFENDER</h1>
         </div>
-        <button onclick="showLevelSelect()" class="btn-primary w-full max-w-xs">INITIALIZE MISSION</button>
+        <div class="flex gap-4 w-full max-w-xs">
+            <button onclick="playClickSound(); showLevelSelect()" class="btn-primary flex-1">INITIALIZE MISSION</button>
+            <button onclick="playClickSound(); openSkinMenu()"
+                class="btn-secondary border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-4">
+                SKIN
+            </button>
+       
+        </div>
+
+        <div id="skinMenu"
+            class="absolute inset-0 z-50 hidden bg-black/95 flex flex-col items-center justify-center p-4">
+            <h2 class="text-2xl text-blue-500 mb-8 tracking-widest">GARAGE: SELECT UNIT</h2>
+            <div id="skinList" class="flex gap-6 overflow-x-auto p-4">
+            </div>
+            <button onclick="playClickSound(); closeSkinMenu()"
+                class="mt-12 text-gray-500 uppercase tracking-widest text-xs">/ Close Garage</button>
+        </div>
     </div>
 
     <div id="levelSelect" class="absolute inset-0 z-10 hidden flex flex-col items-center justify-center bg-black p-4">
@@ -113,6 +129,7 @@
     <script src="js/player.js"></script>
     <script src="js/enemy.js"></script>
     <script src="js/boss.js"></script>
+    <script src="js/skins.js"></script>
     <script src="game.js"></script>
 </body>
 
