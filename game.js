@@ -10,6 +10,11 @@ const BGM_URL = 'bkgmusic.mp3';
 let bgm = new Audio(BGM_URL);
 bgm.loop = true; 
 bgm.volume = 0.5;
+
+const BOSS_SKILL_SOUND_URL = 'boss_skill.mp3'; 
+const bossSkillSound = new Audio(BOSS_SKILL_SOUND_URL);
+bossSkillSound.volume = 1.0;
+
 const BUTTON_CLICK_URL = 'click.mp3';
 const btnClickSound = new Audio(BUTTON_CLICK_URL);
 btnClickSound.volume = 0.6; 
@@ -38,6 +43,7 @@ document.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', playClickSound);
     }
 });
+
 function resize() {
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     if (player) { player.x = canvas.width / 2; player.y = canvas.height - 150; }
@@ -45,7 +51,7 @@ function resize() {
 window.addEventListener('resize', resize); resize();
 
 function handleJoystick(e) {
-    if (!isDragging) return;
+    if (!isDragging || isPaused) return;
     const rect = base.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2, centerY = rect.top + rect.height / 2;
     const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
@@ -58,24 +64,31 @@ function handleJoystick(e) {
     joystickData.x = (Math.cos(angle) * dist) / maxDist; joystickData.y = (Math.sin(angle) * dist) / maxDist;
 }
 
-base.addEventListener('mousedown', () => isDragging = true);
-base.addEventListener('touchstart', (e) => { isDragging = true; e.preventDefault(); }, {passive: false});
+base.addEventListener('mousedown', () => { if(!isPaused) isDragging = true; });
+base.addEventListener('touchstart', (e) => { if(!isPaused) { isDragging = true; e.preventDefault(); } }, {passive: false});
 window.addEventListener('mousemove', handleJoystick);
 window.addEventListener('touchmove', handleJoystick, {passive: false});
 window.addEventListener('mouseup', () => { isDragging = false; stick.style.transform = 'translate(0,0)'; joystickData = {x:0, y:0}; });
 window.addEventListener('touchend', () => { isDragging = false; stick.style.transform = 'translate(0,0)'; joystickData = {x:0, y:0}; });
-fireBtn.addEventListener('mousedown', () => isFiring = true);
-fireBtn.addEventListener('touchstart', (e) => { isFiring = true; e.preventDefault(); }, {passive: false});
+
+fireBtn.addEventListener('mousedown', () => { if(!isPaused) isFiring = true; });
+fireBtn.addEventListener('touchstart', (e) => { if(!isPaused) { isFiring = true; e.preventDefault(); } }, {passive: false});
 window.addEventListener('mouseup', () => isFiring = false);
 window.addEventListener('touchend', () => isFiring = false);
-skillBtn.addEventListener('pointerdown', (e) => { if (skillCooldown <= 0 && currentLevel >= 3) { keys['g'] = true; } e.preventDefault(); });
+
+skillBtn.addEventListener('pointerdown', (e) => { 
+    if (!isPaused && skillCooldown <= 0 && currentLevel >= 3) { keys['g'] = true; } 
+    e.preventDefault(); 
+});
 
 function animate() {
+    if (!gameActive || isPaused) return; 
 
-    if (!gameActive || isPaused) return;
     requestAnimationFrame(animate);
-    ctx.fillStyle = 'black'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+    ctx.clearRect(0, 0, canvas.width, canvas.height); 
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = 'black'; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (skillCooldown > 0) {
         skillCooldown--;
@@ -87,23 +100,14 @@ function animate() {
     }
 
     player.update(); player.draw();
-    explosions.forEach((ex, i) => { ex.update(); ex.draw(); if (ex.life <= 0) explosions.splice(i, 1); });
-    bullets.forEach((b, i) => { b.update(); b.draw(); if (b.y < -50 || b.y > canvas.height + 50 || b.x < -50 || b.x > canvas.width + 50) bullets.splice(i, 1); });
-
-    spawnTimer++;
-    const config = LEVEL_CONFIG[currentLevel];
-
-    if (config.hasBoss && !bossSpawned && spawnTimer > 300) {
-        boss = new Boss(); bossSpawned = true;
-        document.getElementById('bossHUD').classList.remove('hidden');
-    }
 
     if (boss) {
         boss.update(); boss.draw();
         bullets.forEach((b, j) => {
             if (b.x > boss.x && b.x < boss.x + boss.width && b.y > boss.y && b.y < boss.y + boss.height) {
                 let damage = b.isPiercing ? 2 : 1;
-                boss.hp -= damage; bullets.splice(j, 1);
+                boss.hp -= damage; 
+                bullets.splice(j, 1);
                 document.getElementById('bossHPBar').style.width = (boss.hp / boss.maxHp) * 100 + "%";
                 document.getElementById('bossHPText').innerText = Math.max(0, boss.hp) + "/" + boss.maxHp;
                 if (boss.hp <= 0) {
@@ -112,6 +116,23 @@ function animate() {
                 }
             }
         });
+    }
+
+    explosions.forEach((ex, i) => {
+        ex.update(); ex.draw();
+        if (ex.life <= 0) explosions.splice(i, 1);
+    });
+
+    bullets.forEach((b, i) => { 
+        b.update(); b.draw(); 
+        if (b.y < -50 || b.y > canvas.height + 50 || b.x < -50 || b.x > canvas.width + 50) bullets.splice(i, 1); 
+    });
+
+    spawnTimer++;
+    const config = LEVEL_CONFIG[currentLevel];
+    if (config.hasBoss && !bossSpawned && spawnTimer > 300) {
+        boss = new Boss(); bossSpawned = true;
+        document.getElementById('bossHUD').classList.remove('hidden');
     }
 
     if (enemiesSpawned < config.enemiesTarget && spawnTimer % config.spawnRate === 0) {
@@ -127,6 +148,7 @@ function animate() {
             lives -= (en.damage || 1); enemies.splice(i, 1); enemiesLeft--; updateHUD();
             if (lives <= 0) gameOver(false); return;
         }
+
         bullets.forEach((b, j) => {
             if (b.x > en.x && b.x < en.x + en.width && b.y > en.y && b.y < en.y + en.height) {
                 if (b.isPiercing && b.hitEnemies.includes(en)) return;
@@ -140,29 +162,60 @@ function animate() {
                 }
             }
         });
-        if (en && en.y > canvas.height - 75 && en.type !== 'bullet') {
-            enemies.splice(i, 1); lives--; enemiesLeft--; updateHUD();
-            if (lives <= 0) gameOver(false); else if (enemiesLeft <= 0 && !boss) gameOver(true);
+
+        if (en && en.y > canvas.height - 85 && en.type !== 'bullet') {
+            enemies.splice(i, 1);
+            lives -= (en.damage || 1);
+            updateHUD();
+            const line = document.getElementById('defenseLine');
+            if(line) {
+                line.classList.add('defense-hit');
+                setTimeout(() => line.classList.remove('defense-hit'), 200);
+            }
+            document.body.classList.add('shake');
+            setTimeout(() => document.body.classList.remove('shake'), 200);
+            if (lives <= 0) gameOver(false);
+            else if (enemiesLeft <= 0 && !boss) gameOver(true);
         }
     });
 }
 
 function initGame(level) {
-    currentLevel = level; resize();
+    currentLevel = level;
+    resize();
     const config = LEVEL_CONFIG[level];
-    player = new Player(); bullets = []; enemies = []; explosions = [];
-    boss = null; bossSpawned = false;
-    lives = config.lives; enemiesLeft = config.enemiesTarget;
-    enemiesSpawned = 0; spawnTimer = 0; skillCooldown = 0;
+
+    player = new Player();
+    bullets = []; enemies = []; explosions = [];
+    boss = null; bossSpawned = false; 
+
+    lives = config.lives;
+    enemiesLeft = config.enemiesTarget;
+    enemiesSpawned = 0;
+    spawnTimer = 0;
+    skillCooldown = 0;
     gameActive = true;
-    
+    isPaused = false; 
+
+    document.body.classList.remove('shake-heavy', 'shake');
+    document.body.style.transform = "none";
+
+    document.getElementById('gameHUD').style.display = 'block';
+    document.getElementById('pauseMenu').classList.add('hidden');
+    joystickZone.classList.remove('hidden');
+    fireButtonZone.classList.remove('hidden');
+    if (level >= 3) skillButtonZone.classList.remove('hidden'); 
+    else skillButtonZone.classList.add('hidden');
+
     document.getElementById('bossHUD').classList.add('hidden');
-    document.getElementById('bossHPBar').style.width = "100%";
-    document.getElementById('bossHPText').innerText = "30/30";
-    
-    [joystickZone, fireButtonZone].forEach(z => z.classList.remove('hidden'));
-    if (level >= 3) skillButtonZone.classList.remove('hidden'); else skillButtonZone.classList.add('hidden');
-    updateHUD(); animate();
+    if (config.hasBoss) {
+        let maxHp = config.bossHp || 30;
+        document.getElementById('bossHPBar').style.width = "100%";
+        document.getElementById('bossHPText').innerText = maxHp + "/" + maxHp;
+    }
+
+    updateHUD();
+    animate();
 }
 
 function updateHUD() {
@@ -177,67 +230,65 @@ function updateHUD() {
 
 function gameOver(isWin) {
     stopMusic();
-    gameActive = false; document.getElementById('endScreen').style.display = 'flex';
-    [joystickZone, fireButtonZone, skillButtonZone].forEach(z => z.classList.add('hidden'));
+    gameActive = false; 
+    document.getElementById('endScreen').style.display = 'flex';
+    
+    joystickZone.classList.add('hidden');
+    fireButtonZone.classList.add('hidden');
+    skillButtonZone.classList.add('hidden');
+
     const status = document.getElementById('endStatus'), nextBtn = document.getElementById('nextLevelBtn');
-    if (isWin) { status.innerText = "MISSION ACCOMPLISHED"; status.style.color = "#4ade80"; nextBtn.classList.remove('hidden'); }
-    else { status.innerText = "MISSION FAILED"; status.style.color = "#ef4444"; nextBtn.classList.add('hidden'); }
+    if (isWin) { 
+        status.innerText = "MISSION ACCOMPLISHED"; 
+        status.style.color = "#4ade80"; 
+        nextBtn.classList.remove('hidden'); 
+    } else { 
+        status.innerText = "MISSION FAILED"; 
+        status.style.color = "#ef4444"; 
+        nextBtn.classList.add('hidden'); 
+    }
 }
 
 function showMenu() { 
     stopMusic();
     document.getElementById('mainMenu').style.display = 'flex'; 
-    ['levelSelect', 'endScreen', 'gameHUD'].forEach(id => document.getElementById(id).style.display = 'none');
-    [joystickZone, fireButtonZone, skillButtonZone].forEach(z => z.classList.add('hidden'));
+    ['levelSelect', 'endScreen', 'gameHUD', 'pauseMenu'].forEach(id => {
+        let el = document.getElementById(id);
+        if(el) el.style.display = 'none';
+    });
+    joystickZone.classList.add('hidden');
+    fireButtonZone.classList.add('hidden');
+    skillButtonZone.classList.add('hidden');
     gameActive = false; 
+    isPaused = false;
 }
 
 function playMusic(level) {
     bgm.pause();
-    if (level === 4) {
+    if (level === 4 || level === 5) {
         bgm.src = 'kingkong.mp3';
     } else {
         bgm.src = BGM_URL;
     }
     bgm.play();
 }
+
 function stopMusic() {
     bgm.pause();
     bgm.currentTime = 0; 
 }
-function openSkinMenu() {
-    const menu = document.getElementById('skinMenu');
-    const list = document.getElementById('skinList');
-    menu.classList.remove('hidden');
-    list.innerHTML = ''; 
 
-    Object.keys(SKINS_CONFIG).forEach(key => {
-        const skin = SKINS_CONFIG[key];
-        const isSelected = currentSkinKey === key;
-        
-        const card = document.createElement('div');
-        card.className = `p-4 border-2 transition-all cursor-pointer flex flex-col items-center ${isSelected ? 'border-blue-500 bg-blue-500/20' : 'border-white/10 bg-white/5'}`;
-        card.innerHTML = `
-            <img src="${skin.img}" class="w-20 h-20 mb-2 object-contain">
-            <div class="text-[10px] font-bold">${skin.name}</div>
-            <div class="text-[8px] opacity-50">${skin.description}</div>
-        `;
-        card.onclick = () => {
-            playClickSound();
-            currentSkinKey = key;
-            openSkinMenu();
-        };
-        list.appendChild(card);
-    });
-}
-
-function closeSkinMenu() {
-    document.getElementById('skinMenu').classList.add('hidden');
-}
 function pauseGame() {
-    if (!gameActive) return;
+    if (!gameActive || isPaused) return;
     isPaused = true;
-    document.getElementById('pauseMenu').classList.remove('hidden');
+    const pMenu = document.getElementById('pauseMenu');
+    pMenu.style.display = 'flex';
+    pMenu.classList.remove('hidden');
+    
+    joystickZone.classList.add('hidden');
+    fireButtonZone.classList.add('hidden');
+    skillButtonZone.classList.add('hidden');
+    
     bgm.pause();
     playClickSound();
 }
@@ -245,22 +296,34 @@ function pauseGame() {
 function resumeGame() {
     if (!isPaused) return;
     isPaused = false;
-    document.getElementById('pauseMenu').classList.add('hidden');
+    const pMenu = document.getElementById('pauseMenu');
+    pMenu.style.display = 'none';
+    pMenu.classList.add('hidden');
+    
+    joystickZone.classList.remove('hidden');
+    fireButtonZone.classList.remove('hidden');
+    if (currentLevel >= 3) skillButtonZone.classList.remove('hidden');
+
     bgm.play();
+    playClickSound();
     requestAnimationFrame(animate); 
 }
-function showLevelSelect() { document.getElementById('mainMenu').style.display = 'none'; document.getElementById('levelSelect').style.display = 'flex'; }
-function startGame(level) { document.getElementById('levelSelect').style.display = 'none'; document.getElementById('gameHUD').style.display = 'block';playMusic(level); initGame(level); }
-function restartLevel() { document.getElementById('endScreen').style.display = 'none';playMusic(currentLevel); initGame(currentLevel); }
-function nextLevel() { document.getElementById('endScreen').style.display = 'none'; currentLevel++;playMusic(currentLevel); initGame(currentLevel); }
 
-window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-window.addEventListener("keydown", function(e) { if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) e.preventDefault(); }, false);
+function showLevelSelect() { document.getElementById('mainMenu').style.display = 'none'; document.getElementById('levelSelect').style.display = 'flex'; }
+function startGame(level) { document.getElementById('levelSelect').style.display = 'none'; document.getElementById('gameHUD').style.display = 'block'; playMusic(level); initGame(level); }
+function restartLevel() { document.getElementById('endScreen').style.display = 'none'; document.getElementById('pauseMenu').classList.add('hidden'); document.getElementById('pauseMenu').style.display = 'none'; playMusic(currentLevel); initGame(currentLevel); }
+function nextLevel() { document.getElementById('endScreen').style.display = 'none'; currentLevel++; playMusic(currentLevel); initGame(currentLevel); }
+
 window.addEventListener('keydown', e => {
     if (e.key === "Escape") {
-        if (!isPaused) pauseGame();
-        else resumeGame();
+        if (gameActive) {
+            if (!isPaused) pauseGame();
+            else resumeGame();
+        }
     }
     keys[e.key.toLowerCase()] = true;
 });
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+window.addEventListener("keydown", function(e) { 
+    if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) e.preventDefault(); 
+}, false);
