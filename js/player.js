@@ -91,7 +91,7 @@ class Player {
         );
 
         let sound = this.shootSfx.cloneNode(); 
-        sound.volume = 0.3;
+        sound.volume = 0.5;
         sound.playbackRate = 2.5;
         sound.play();
 
@@ -117,3 +117,4 @@ class Player {
     this.skillSfx.play();
   }
 }
+
