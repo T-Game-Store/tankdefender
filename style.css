@@ -146,6 +146,7 @@ canvas {
     30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
     40%, 60% { transform: translate3d(8px, 0, 0); }
 }
+
 #pauseBtn {
     transition: all 0.2s;
     backdrop-filter: blur(5px);
@@ -160,4 +161,56 @@ canvas {
 #pauseMenu {
     backdrop-filter: blur(8px);
 }
+#defenseLine {
+    transition: all 0.3s;
+    z-index: 5;
+}
 
+.scanner {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+    background-size: 200% 100%;
+    animation: scan 3s linear infinite;
+}
+
+@keyframes scan {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.defense-hit {
+    background: #ffffff !important;
+    box-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000 !important;
+    height: 6px !important;
+}
+
+/* Chỉ tác động lên transform, không đổi kích thước */
+.shake-heavy {
+    animation: shake-heavy 0.1s infinite;
+    overflow: hidden; /* Tránh tràn viền */
+}
+
+body {
+    background-color: black;
+    margin: 0;
+    overflow: hidden;
+    /* Giúp hệ tọa độ ổn định hơn khi rung */
+    position: relative; 
+}
+
+@keyframes shake-heavy {
+    0% { transform: translate(0, 0); }
+    10% { transform: translate(-8px, -8px); }
+    20% { transform: translate(8px, 5px); }
+    30% { transform: translate(-5px, 8px); }
+    40% { transform: translate(8px, -5px); }
+    50% { transform: translate(-8px, 5px); }
+    60% { transform: translate(8px, 8px); }
+    70% { transform: translate(-5px, -8px); }
+    80% { transform: translate(5px, 5px); }
+    90% { transform: translate(-8px, 5px); }
+    100% { transform: translate(0, 0); }
+}
+#bossHPContainer {
+    height: 60px !important;
+    border: 2px solid white;
+}
