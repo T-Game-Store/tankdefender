@@ -1,5 +1,6 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+let isPaused = false;
 
 const IMG_PLAYER = 'tank.png', IMG_ENEMY = 'quai.png', IMG_ENEMY_TANK = 'quai_trau.png',
       IMG_ENEMY_DASH = 'quai_nhanh.png', IMG_ENEMY_BOMB = 'quai_bom.png',
@@ -70,7 +71,8 @@ window.addEventListener('touchend', () => isFiring = false);
 skillBtn.addEventListener('pointerdown', (e) => { if (skillCooldown <= 0 && currentLevel >= 3) { keys['g'] = true; } e.preventDefault(); });
 
 function animate() {
-    if (!gameActive) return;
+
+    if (!gameActive || isPaused) return;
     requestAnimationFrame(animate);
     ctx.fillStyle = 'black'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
@@ -232,6 +234,21 @@ function openSkinMenu() {
 function closeSkinMenu() {
     document.getElementById('skinMenu').classList.add('hidden');
 }
+function pauseGame() {
+    if (!gameActive) return;
+    isPaused = true;
+    document.getElementById('pauseMenu').classList.remove('hidden');
+    bgm.pause();
+    playClickSound();
+}
+
+function resumeGame() {
+    if (!isPaused) return;
+    isPaused = false;
+    document.getElementById('pauseMenu').classList.add('hidden');
+    bgm.play();
+    requestAnimationFrame(animate); 
+}
 function showLevelSelect() { document.getElementById('mainMenu').style.display = 'none'; document.getElementById('levelSelect').style.display = 'flex'; }
 function startGame(level) { document.getElementById('levelSelect').style.display = 'none'; document.getElementById('gameHUD').style.display = 'block';playMusic(level); initGame(level); }
 function restartLevel() { document.getElementById('endScreen').style.display = 'none';playMusic(currentLevel); initGame(currentLevel); }
@@ -240,3 +257,10 @@ function nextLevel() { document.getElementById('endScreen').style.display = 'non
 window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 window.addEventListener("keydown", function(e) { if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) e.preventDefault(); }, false);
+window.addEventListener('keydown', e => {
+    if (e.key === "Escape") {
+        if (!isPaused) pauseGame();
+        else resumeGame();
+    }
+    keys[e.key.toLowerCase()] = true;
+});
