@@ -34,28 +34,49 @@
         <div id="skinMenu"
             class="absolute inset-0 z-50 hidden bg-black/95 flex flex-col items-center justify-center p-4">
             <h2 class="text-2xl text-blue-500 mb-8 tracking-widest">GARAGE: SELECT UNIT</h2>
-            <div id="skinList" class="flex gap-6 overflow-x-auto p-4">
-            </div>
+            <div id="skinList" class="p-4"></div>
             <button onclick="playClickSound(); closeSkinMenu()"
                 class="mt-12 text-gray-500 uppercase tracking-widest text-xs">/ Close Garage</button>
         </div>
     </div>
 
     <div id="levelSelect" class="absolute inset-0 z-10 hidden flex flex-col items-center justify-center bg-black p-4">
-        <h2 class="text-xl md:text-2xl text-red-600 mb-10 tracking-[0.5em] font-bold">SECTOR SELECTION</h2>
-        <div class="flex gap-4 md:gap-6">
-            <button onclick="startGame(1)" class="level-btn active">01</button>
-            <button onclick="startGame(2)" class="level-btn active">02</button>
-            <button onclick="startGame(3)" class="level-btn active">03</button>
-            <button onclick="startGame(4)"
-                class="level-btn active border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]">04</button>
-             <button onclick="startGame(5)"
-                class="level-btn active border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]">05</button>
-        </div>
-        <button onclick="showMenu()"
-            class="mt-16 text-gray-500 hover:text-white transition-all text-xs tracking-widest uppercase">/ Return to
-            Command</button>
+    <div class="mb-10 text-center">
+        <h2 class="text-2xl md:text-3xl text-red-600 tracking-[0.5em] font-bold uppercase">Tactical Map</h2>
+        <div class="h-[1px] w-48 bg-red-900/50 mx-auto mt-2"></div>
     </div>
+
+    <div class="level-grid">
+        <div onclick="startGame(1)" class="level-card">
+            <span class="num">01</span>
+            <span class="label">Sector</span>
+        </div>
+        <div onclick="startGame(2)" class="level-card">
+            <span class="num">02</span>
+            <span class="label">Sector</span>
+        </div>
+        <div onclick="startGame(3)" class="level-card">
+            <span class="num">03</span>
+            <span class="label">Sector</span>
+        </div>
+        <div onclick="startGame(4)" class="level-card boss-level">
+            <span class="num">04</span>
+            <span class="label">Mini Boss</span>
+        </div>
+        <div onclick="startGame(5)" class="level-card boss-level">
+            <span class="num">05</span>
+            <span class="label">Final Boss</span>
+        </div>
+        <div onclick="startGame(6)" class="level-card">
+            <span class="num">06</span>
+            <span class="label">Sector</span>
+        </div>
+    </div>
+
+    <button onclick="showMenu()" class="mt-16 text-gray-600 hover:text-red-500 transition-all text-[10px] tracking-[0.3em] uppercase border-b border-transparent hover:border-red-500">
+        / DISCONNECT TO COMMAND CENTER
+    </button>
+</div>
 
     <div id="gameHUD" class="absolute inset-0 pointer-events-none hidden p-4 md:p-8">
         <div class="absolute bottom-6 left-6 md:bottom-8 md:left-8 border-l-2 border-red-700 pl-4 bg-black/40 p-2">
