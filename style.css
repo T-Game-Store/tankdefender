@@ -183,17 +183,15 @@ canvas {
     height: 6px !important;
 }
 
-/* Chỉ tác động lên transform, không đổi kích thước */
 .shake-heavy {
     animation: shake-heavy 0.1s infinite;
-    overflow: hidden; /* Tránh tràn viền */
+    overflow: hidden; 
 }
 
 body {
     background-color: black;
     margin: 0;
     overflow: hidden;
-    /* Giúp hệ tọa độ ổn định hơn khi rung */
     position: relative; 
 }
 
@@ -213,4 +211,10 @@ body {
 #bossHPContainer {
     height: 60px !important;
     border: 2px solid white;
+}
+
+
+#skillButton.frozen-skill {
+    background-image: url('skill_frozen.png'); 
+    box-shadow: 0 0 15px #00ffff; 
 }
