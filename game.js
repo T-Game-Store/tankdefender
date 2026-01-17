@@ -35,7 +35,7 @@ let isDragging = false, isFiring = false, joystickData = { x: 0, y: 0 };
 function playClickSound() {
     btnClickSound.currentTime = 0; 
     btnClickSound.playbackRate = 2.5;
-    btnClickSound.play();
+    btnClickSound.play().catch(e => {});
 }
 
 function resize() {
@@ -71,7 +71,9 @@ window.addEventListener('mouseup', () => isFiring = false);
 window.addEventListener('touchend', () => isFiring = false);
 
 skillBtn.addEventListener('pointerdown', (e) => { 
-    if (!isPaused && skillCooldown <= 0 && currentLevel >= 3) { keys['g'] = true; } 
+    if (!isPaused && skillCooldown <= 0 && (currentLevel >= 3 || currentSkinKey === 'frozen' || currentSkinKey === 'mixi')) { 
+        keys['g'] = true; 
+    } 
     e.preventDefault(); 
 });
 
@@ -91,16 +93,19 @@ function animate() {
     } else {
         document.getElementById('skillCooldownOverlay').style.height = "0%";
         document.getElementById('skillTimerText').innerText = "G";
-       if (keys['g']) {
-    if (currentSkinKey === 'frozen') {
-        bullets.push(new Bullet(player.x, player.y, Math.sin(player.angle) * 12, -Math.cos(player.angle) * 12, true, player.angle));
-        skillCooldown = 600; 
-    } else if (currentLevel >= 3) {
-        bullets.push(new Bullet(player.x, player.y, Math.sin(player.angle) * 15, -Math.cos(player.angle) * 15, false, player.angle));
-        skillCooldown = 600;
-    }
-    keys['g'] = false;
-}
+        if (keys['g']) {
+            const skinData = SKINS_CONFIG[currentSkinKey];
+            const skillSfx = new Audio(skinData.skillSound);
+            skillSfx.play().catch(e => {});
+
+            if (currentSkinKey === 'frozen') {
+                bullets.push(new Bullet(player.x, player.y, Math.sin(player.angle) * 12, -Math.cos(player.angle) * 12, true, player.angle));
+            } else {
+                bullets.push(new Bullet(player.x, player.y, Math.sin(player.angle) * 15, -Math.cos(player.angle) * 15, false, player.angle));
+            }
+            skillCooldown = 600;
+            keys['g'] = false;
+        }
     }
 
     player.update();
@@ -204,6 +209,7 @@ function animate() {
     enemies = enemies.filter(en => !en._dead);
     explosions = explosions.filter(ex => ex.life > 0);
 }
+
 function initGame(level) {
     currentLevel = level;
     resize();
@@ -230,21 +236,24 @@ function initGame(level) {
     
     joystickZone.classList.remove('hidden');
     fireButtonZone.classList.remove('hidden');
-    if (level >= 3) skillButtonZone.classList.remove('hidden'); 
-    else skillButtonZone.classList.add('hidden');
+    
+    const skillBtn = document.getElementById('skillButton');
+    if (level >= 3 || currentSkinKey === 'frozen' || currentSkinKey === 'mixi') {
+        skillButtonZone.classList.remove('hidden');
+        if (currentSkinKey === 'frozen') {
+            skillBtn.classList.add('frozen-skill');
+        } else {
+            skillBtn.classList.remove('frozen-skill');
+        }
+    } else {
+        skillButtonZone.classList.add('hidden');
+    }
 
     document.getElementById('bossHUD').classList.add('hidden');
     if (config.hasBoss) {
         let maxHp = config.bossHp || 30;
         document.getElementById('bossHPBar').style.width = "100%";
         document.getElementById('bossHPText').innerText = maxHp + "/" + maxHp;
-    }
-    const skillBtn = document.getElementById('skillButton');
-    
-    if (currentSkinKey === 'frozen') {
-        skillBtn.classList.add('frozen-skill');
-    } else {
-        skillBtn.classList.remove('frozen-skill');
     }
 
     updateHUD();
@@ -308,7 +317,7 @@ function playMusic(level) {
     } else {
         bgm.src = BGM_URL;
     }
-    bgm.play().catch(e => console.log("Music play blocked"));
+    bgm.play().catch(e => {});
 }
 
 function stopMusic() {
@@ -374,7 +383,7 @@ function resumeGame() {
     
     joystickZone.classList.remove('hidden');
     fireButtonZone.classList.remove('hidden');
-    if (currentLevel >= 3) skillButtonZone.classList.remove('hidden');
+    if (currentLevel >= 3 || currentSkinKey === 'frozen' || currentSkinKey === 'mixi') skillButtonZone.classList.remove('hidden');
 
     bgm.play().catch(e => {});
     playClickSound();
