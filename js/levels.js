@@ -4,7 +4,7 @@ const LEVEL_CONFIG = {
     3: { lives: 5, enemiesTarget: 30, spawnRate: 100, quaiTrauChance: 0.25, quaiNhanhChance: 0.15, quaiBomChance: 0.15 },
     4: { lives: 5, enemiesTarget: 35, spawnRate: 100, quaiTrauChance: 0.25, quaiNhanhChance: 0.15, quaiBomChance: 0.15, hasBoss: true },
     5: { 
-        lives: 7, 
+        lives: 5, 
         enemiesTarget: 25, 
         spawnRate: 80, 
         quaiTrauChance: 0.4, 
@@ -12,6 +12,13 @@ const LEVEL_CONFIG = {
         quaiBomChance: 0.3, 
         hasBoss: true,
         bossHp: 50 
+    },
+    6: {
+        enemiesTarget: 40,
+        spawnRate: 80, 
+        lives: 5,
+        hasBoss: false,
+        enemyTypes: ['bomb', 'tank', 'skeleton'] 
     }
 };
 
@@ -22,6 +29,12 @@ function getSpawnType(level) {
     if (level >= 3) {
         if (r > 0.7 && r < 0.7 + config.quaiNhanhChance) return 'dash';
         if (r > 0.85) return 'bomb';
+    }
+    if (level === 6) {
+        const rand = Math.random();
+        if (rand < 0.4) return 'skeleton'; 
+        if (rand < 0.7) return 'tank';    
+        return 'bomb';                     
     }
     return 'normal';
 }
